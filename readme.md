@@ -13,33 +13,33 @@
 
 ## Executive Summary
 
-This document outlines the engineering specification for an AI Virtual Assistant system that automates three core organizational functions through WhatsApp integration: calendar management, sheet-based helpdesk operations, and enterprise knowledge access.
+This document defines the engineering specification for an AI Virtual Assistant system that automates three organizational functions through WhatsApp integration: calendar management, sheet-based helpdesk operations, and enterprise knowledge access.
 
-The system leverages LangGraph for conversation orchestration and MCP (Model Context Protocol) for tool management, providing natural language automation for:
+The system uses LangGraph for conversation orchestration and MCP (Model Context Protocol) for tool management, providing natural language automation for:
 - **Calendar Automation**: Meeting scheduling, conflict resolution, and reminder notifications
 - **Sheet Automation**: Spreadsheet-based helpdesk operations via Microsoft 365 Excel  
 - **Knowledge Enterprise**: Company Q&A access with manual document indexing workflows
 
-The assistant uses OpenAI for natural language processing, Pinecone for vector search, Microsoft 365 APIs for calendar and document integration, and Redis for async job processing. The modular architecture enables role-based access control and scales with organizational needs.
+The assistant uses OpenAI for natural language processing, Pinecone for vector search, Microsoft 365 APIs for calendar and document integration, and Redis for async job processing. The modular architecture supports role-based access control and organizational scaling.
 
 ## Background
 
 ### Problem Statement
-Organizations face inefficiencies in three critical operational areas:
-- **Calendar Management**: Manual meeting scheduling leads to conflicts and coordination overhead
+Organizations experience inefficiencies in three operational areas:
+- **Calendar Management**: Manual meeting scheduling leads to manual efforts
 - **Helpdesk Operations**: Sheet-based tracking via traditional systems creates bottlenecks and delays
 - **Knowledge Access**: Company information scattered across documents with poor searchability
 
 ### Solution Overview
-An AI-powered virtual assistant accessible via WhatsApp that automates:
-- **Calendar Automation**: Intelligent meeting scheduling with conflict resolution via Microsoft 365
+An AI virtual assistant accessible via WhatsApp that automates:
+- **Calendar Automation**: Intelligent meeting management automation
 - **Sheet Automation**: Helpdesk management through automated spreadsheet operations
-- **Knowledge Base**: Enterprise Q&A with semantic search across company documents
+- **Knowledge Enterprise**: Enterprise Q&A with semantic search across company documents
 - Maintains role-based security and integrates with existing Microsoft 365 infrastructure
 
 ### Technology Stack
 
-Our technology stack is organized from communication to backend, showing the complete flow from user interaction to data storage:
+The technology stack is organized from communication to backend, showing the complete flow from user interaction to data storage:
 
 #### Communication Layer  
 - **WAHA (WhatsApp Business API)**: Message handling, delivery, and webhook management
@@ -176,7 +176,7 @@ graph TB
 
 ### Data Flow Sequence
 
-The data flow through our system follows a carefully orchestrated sequence that ensures security, maintains context, and delivers intelligent responses. Each step in the flow serves a specific purpose in transforming a user's natural language input into actionable results.
+The data flow follows a sequence that ensures security, maintains context, and delivers responses. Each step transforms user natural language input into actionable results.
 
 ```mermaid
 sequenceDiagram
@@ -242,33 +242,33 @@ sequenceDiagram
 
 #### Detailed Flow Analysis
 
-1. **Message Reception and Validation**: When a user sends a message via WhatsApp, it first reaches the WAHA (WhatsApp HTTP API) service. WAHA handles the complexities of the WhatsApp Business API, including encryption, delivery receipts, and media handling. The webhook handler performs initial validation using HMAC signatures to ensure the request originates from a trusted source.
+1. **Message Reception and Validation**: When a user sends a message via WhatsApp, it reaches the WAHA (WhatsApp HTTP API) service. WAHA handles the WhatsApp Business API functions including encryption, delivery receipts, and media handling. The webhook handler performs initial validation using HMAC signatures to verify the request source.
 
-2. **Security Layer Processing**: Before any business logic executes, the security module validates the user's identity using their phone number as the primary identifier. It checks if the user is onboarded, retrieves their role-based permissions, and applies rate limiting to prevent abuse. Unauthorized users receive a friendly message guiding them through the onboarding process.
+2. **Security Layer Processing**: Before business logic execution, the security module validates user identity using phone number as the primary identifier. It verifies user onboarding status, retrieves role-based permissions, and applies rate limiting to prevent abuse. Unauthorized users receive an onboarding message.
 
-3. **Context Understanding**: The context module analyzes the incoming message within the conversation history. It uses a sliding window approach to maintain relevant context while managing memory efficiently. Query complexity analysis determines whether the request requires simple tool execution or complex multi-step reasoning.
+3. **Context Understanding**: The context module analyzes incoming messages within conversation history. It uses a sliding window approach to maintain relevant context while managing memory efficiently. Query complexity analysis determines whether the request requires simple tool execution or multi-step reasoning.
 
-4. **Tool Discovery and Filtering**: Based on the user's role and the query context, the system requests available tools from the MCP server. The server returns a filtered list of tools that the user has permission to access. This dynamic tool discovery allows the system to adapt as new capabilities are added without modifying the core logic.
+4. **Tool Discovery and Filtering**: Based on user role and query context, the system requests available tools from the MCP server. The server returns a filtered list of tools that the user can access. Dynamic tool discovery allows the system to adapt as new capabilities are added without modifying core logic.
 
 5. **Intelligent Planning**: The reasoning module creates an execution plan, breaking complex requests into discrete steps. For example, \"Schedule a meeting with the sales team and share last month's revenue spreadsheet\" becomes a multi-step plan involving calendar checking, meeting creation, spreadsheet retrieval, and sharing.
 
-6. **Tool Execution**: The MCP server executes tools according to the plan, handling errors gracefully and providing detailed feedback. Tools can be executed in parallel when there are no dependencies, improving response time. Each tool execution is logged for auditing and debugging purposes.
+6. **Tool Execution**: The MCP server executes tools according to the plan, handling errors and providing feedback. Tools execute in parallel when no dependencies exist, improving response time. Each tool execution is logged for auditing and debugging.
 
-7. **Response Generation**: The communication module transforms structured tool outputs into natural, conversational responses. It considers the user's communication style, previous interactions, and the complexity of the results to generate appropriate responses. Long responses are automatically chunked to comply with WhatsApp message limits.
+7. **Response Generation**: The communication module transforms structured tool outputs into conversational responses. It considers user communication style, previous interactions, and result complexity to generate appropriate responses. Long responses are automatically chunked to comply with WhatsApp message limits.
 
-8. **Delivery and Confirmation**: The formatted response is sent back through the MCP server to WAHA, which handles the actual delivery to WhatsApp. Delivery receipts are tracked to ensure messages reach users, with retry logic for temporary failures.
+8. **Delivery and Confirmation**: The formatted response is sent through the MCP server to WAHA, which handles delivery to WhatsApp. Delivery receipts are tracked to ensure messages reach users, with retry logic for temporary failures.
 
 ## Component Specifications
 
-This section provides detailed technical specifications for each major component in the system. Each component is designed with specific architectural principles in mind: high cohesion, loose coupling, clear interfaces, and operational excellence.
+This section provides detailed technical specifications for each major component. Each component follows architectural principles: high cohesion, loose coupling, clear interfaces, and operational excellence.
 
 ### MCP Server (Golang)
 
-The MCP (Model Context Protocol) Server represents the heart of our tool execution layer. Written in Go for its excellent concurrency support and low-latency performance, the MCP Server provides a unified, standardized interface for all external integrations. This abstraction layer shields the AI orchestration logic from the complexities of various APIs, authentication mechanisms, and data formats.
+The MCP (Model Context Protocol) Server is the core tool execution layer. Written in Go for concurrency support and low-latency performance, the MCP Server provides a unified interface for external integrations. This abstraction layer isolates AI orchestration logic from API complexities, authentication mechanisms, and data formats.
 
 #### Architecture Design
 
-The MCP Server follows a modular architecture with clear separation between the API layer, business logic, and external integrations. This design enables independent testing of components and allows for easy addition of new tools without affecting existing functionality.
+The MCP Server follows a modular architecture with clear separation between API layer, business logic, and external integrations. This design enables independent component testing and allows new tool addition without affecting existing functionality.
 
 ```mermaid
 graph LR
@@ -314,11 +314,11 @@ graph LR
 
 #### Tool Specifications
 
-Each tool in the MCP Server is designed as a self-contained module with clearly defined inputs, outputs, and side effects. Tools are categorized as either "static" (core functionality that rarely changes) or "dynamic" (functionality that may need frequent updates or has external dependencies).
+Each tool in the MCP Server is a self-contained module with defined inputs, outputs, and side effects. Tools are categorized as "static" (core functionality that rarely changes) or "dynamic" (functionality requiring frequent updates or having external dependencies).
 
 ##### User Management Tools
 
-User management forms the foundation of our security and personalization features. These tools handle the complete user lifecycle from onboarding through deactivation, maintaining data integrity and security throughout.
+User management provides the foundation for security and personalization features. These tools handle the complete user lifecycle from onboarding through deactivation, maintaining data integrity and security.
 
 **Core Capabilities:**
 - **User Creation:** Onboards new users with phone number verification, email validation, and role assignment
@@ -333,7 +333,7 @@ User management forms the foundation of our security and personalization feature
 
 ##### Calendar Management Tools
 
-Calendar integration provides sophisticated meeting management capabilities that understand natural language requests and handle complex scheduling scenarios. The system integrates seamlessly with Microsoft 365 Calendar, maintaining compatibility with existing organizational workflows.
+Calendar integration provides meeting management capabilities that process natural language requests and handle scheduling scenarios. The system integrates with Microsoft 365 Calendar, maintaining compatibility with existing organizational workflows.
 
 **Core Operations:**
 - **Meeting Creation:** Intelligent meeting creation for their own email
@@ -343,7 +343,7 @@ Calendar integration provides sophisticated meeting management capabilities that
 
 ##### Sheet Management Tools
 
-Spreadsheet integration transforms complex Excel operations into simple conversational requests. Users can query data, update values, and generate reports without understanding Excel formulas or navigation. The system maintains full compatibility with Microsoft 365 Excel while adding intelligent features.
+Spreadsheet integration converts complex Excel operations into conversational requests. Users can query data, update values, and generate reports without understanding Excel formulas or navigation. The system maintains compatibility with Microsoft 365 Excel while adding features.
 
 **Core Operations:**
 - **Sheet Creation:** Create new ticket for existing sheet
@@ -352,7 +352,7 @@ Spreadsheet integration transforms complex Excel operations into simple conversa
 
 ##### Knowledge Base Tools
 
-The knowledge base system represents our most sophisticated tool, implementing state-of-the-art RAG (Retrieval-Augmented Generation) techniques. It transforms static documents into a dynamic, queryable knowledge graph that understands context, relationships, and semantic meaning.
+The knowledge base system implements RAG (Retrieval-Augmented Generation) techniques. It transforms static documents into a queryable knowledge graph that processes context, relationships, and semantic meaning.
 
 **Core Operations:**
 - **Manual Document Upload:** Users manually upload documents to OneDrive outside of WhatsApp interface
@@ -363,15 +363,15 @@ The knowledge base system represents our most sophisticated tool, implementing s
 
 ### LangGraph Engine (Python)
 
-The LangGraph Engine serves as the cognitive center of our virtual assistant, orchestrating complex conversation flows while maintaining state across interactions. Built on LangChain's LangGraph framework, it implements a directed graph architecture where nodes represent processing steps and edges define the flow of conversation state.
+The LangGraph Engine serves as the cognitive center of the virtual assistant, orchestrating conversation flows while maintaining state across interactions. Built on LangChain's LangGraph framework, it implements a directed graph architecture where nodes represent processing steps and edges define conversation state flow.
 
-Our implementation leverages LangGraph's unique capabilities to handle multi-step reasoning, conditional branching, and long-running conversations that span multiple user interactions. Unlike traditional chatbots that treat each message independently, our system maintains rich conversational context, enabling sophisticated multi-turn interactions that feel natural and intelligent.
+The implementation uses LangGraph's capabilities to handle multi-step reasoning, conditional branching, and long-running conversations across multiple user interactions. Unlike traditional chatbots that treat each message independently, this system maintains conversational context, enabling multi-turn interactions.
 
-The choice of Python for the LangGraph Engine provides access to the mature AI/ML ecosystem while maintaining code readability and rapid development capabilities. The engine is designed to be horizontally scalable, with each conversation maintaining its own state graph that can be persisted and resumed across server restarts.
+Python for the LangGraph Engine provides access to the AI/ML ecosystem while maintaining code readability and development capabilities. The engine is horizontally scalable, with each conversation maintaining its own state graph that persists and resumes across server restarts.
 
 #### Module Architecture
 
-The LangGraph Engine employs a modular architecture where each module represents a node in the conversation graph. This design enables clear separation of concerns, independent testing, and the ability to modify conversation flows without affecting core logic.
+The LangGraph Engine uses a modular architecture where each module represents a node in the conversation graph. This design enables separation of concerns, independent testing, and conversation flow modification without affecting core logic.
 
 ```mermaid
 graph TB
@@ -487,11 +487,11 @@ graph TB
 
 ## Security Architecture
 
-Security is not an afterthought but a fundamental design principle woven throughout our architecture. Our multi-layered security approach ensures data protection, user privacy, and system integrity while maintaining the conversational ease that makes the system accessible. We implement defense-in-depth strategies, assuming breach at every layer and implementing compensating controls.
+Security is a fundamental design principle throughout the architecture. The multi-layered security approach ensures data protection, user privacy, and system integrity while maintaining conversational accessibility. The implementation uses defense-in-depth strategies, assuming breach at every layer and implementing compensating controls.
 
 ### Authentication & Authorization
 
-Our authentication system leverages WhatsApp's inherent phone number verification as the primary authentication factor, eliminating passwords while maintaining security. This approach reduces phishing risks and provides a seamless user experience. The authorization layer implements fine-grained, role-based access control that adapts dynamically based on user context and request patterns.
+The authentication system uses WhatsApp's phone number verification as the primary authentication factor, eliminating passwords while maintaining security. This approach reduces phishing risks and provides seamless user experience. The authorization layer implements fine-grained, role-based access control that adapts dynamically based on user context and request patterns.
 
 ```mermaid
 graph LR
@@ -518,7 +518,7 @@ graph LR
 
 ### Security Measures
 
-Our security implementation follows industry best practices while adapting to the unique requirements of a conversational AI system. Each security measure is carefully balanced against usability to ensure protection without hindering legitimate use.
+The security implementation follows industry best practices while adapting to conversational AI system requirements. Each security measure balances protection against usability to ensure legitimate use is not hindered.
 
 #### 1. HMAC Authentication
 
@@ -531,7 +531,7 @@ HMAC (Hash-based Message Authentication Code) provides cryptographic assurance t
 
 #### 2. Rate Limiting
 
-Our rate limiting system goes beyond simple request counting, implementing intelligent throttling that adapts to usage patterns while preventing abuse.
+The rate limiting system implements intelligent throttling that adapts to usage patterns while preventing abuse.
 
 - **Per-User Limits**: Default 10 requests per second, burstable to 20 for 10 seconds
 
@@ -549,9 +549,9 @@ Data protection encompasses encryption, access control, and privacy measures thr
 
 ## Deployment Strategy
 
-Our deployment strategy emphasizes operational simplicity, reliability, and cost-effectiveness. By choosing a VPS-based deployment over complex orchestration platforms, we maintain full control while reducing operational overhead. The containerized architecture ensures consistency across environments while enabling easy scaling when needed.
+The deployment strategy emphasizes operational simplicity, reliability, and cost-effectiveness. VPS-based deployment over complex orchestration platforms maintains control while reducing operational overhead. The containerized architecture ensures consistency across environments while enabling scaling when needed.
 
-The deployment approach follows the principle of "boring technology" - using well-understood, battle-tested components that operations teams can manage confidently. This reduces the learning curve and ensures that the system can be maintained by a broad range of technical staff.
+The deployment approach uses well-understood, battle-tested components that operations teams can manage confidently. This reduces the learning curve and ensures the system can be maintained by technical staff.
 
 ### Infrastructure Architecture
 
