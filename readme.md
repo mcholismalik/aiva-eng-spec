@@ -32,8 +32,8 @@ Organizations face inefficiencies in three critical operational areas:
 
 ### Solution Overview
 An AI-powered virtual assistant accessible via WhatsApp that automates:
-- **Calendar Operations**: Intelligent meeting scheduling with conflict resolution via Microsoft 365
-- **Sheet System**: Helpdesk management through automated spreadsheet operations
+- **Calendar Automation**: Intelligent meeting scheduling with conflict resolution via Microsoft 365
+- **Sheet Automation**: Helpdesk management through automated spreadsheet operations
 - **Knowledge Base**: Enterprise Q&A with semantic search across company documents
 - Maintains role-based security and integrates with existing Microsoft 365 infrastructure
 
@@ -266,13 +266,6 @@ This section provides detailed technical specifications for each major component
 
 The MCP (Model Context Protocol) Server represents the heart of our tool execution layer. Written in Go for its excellent concurrency support and low-latency performance, the MCP Server provides a unified, standardized interface for all external integrations. This abstraction layer shields the AI orchestration logic from the complexities of various APIs, authentication mechanisms, and data formats.
 
-The decision to implement the MCP Server in Go stems from several technical requirements:
-- **Concurrent Tool Execution**: Go's goroutines and channels enable efficient parallel execution of independent tools
-- **Low Memory Footprint**: Critical for scaling to thousands of concurrent users without excessive infrastructure costs
-- **Strong Typing**: Reduces runtime errors and improves code maintainability
-- **Excellent HTTP Performance**: Native HTTP server capabilities handle high request volumes efficiently
-- **Simple Deployment**: Single binary compilation simplifies containerization and deployment
-
 #### Architecture Design
 
 The MCP Server follows a modular architecture with clear separation between the API layer, business logic, and external integrations. This design enables independent testing of components and allows for easy addition of new tools without affecting existing functionality.
@@ -337,56 +330,25 @@ User management forms the foundation of our security and personalization feature
 - Phone number uniqueness validation with international format support
 - Email domain whitelisting for corporate security
 - Role-based permission system with admin approval for privilege changes
-- Comprehensive audit logging for all user modifications
-- Encrypted storage for personally identifiable information
 
 ##### Calendar Management Tools
 
 Calendar integration provides sophisticated meeting management capabilities that understand natural language requests and handle complex scheduling scenarios. The system integrates seamlessly with Microsoft 365 Calendar, maintaining compatibility with existing organizational workflows.
 
 **Core Operations:**
-- **Meeting Creation:** Intelligent conflict resolution with automatic time zone detection and optimal slot finding
-- **Meeting Updates:** Change management with automatic attendee notifications and conflict checking
-- **Meeting Cancellation:** Proper notification handling with meeting room release and material archival
-- **Event Retrieval:** Smart filtering and sorting with detailed information on demand
-- **Availability Finding:** Multi-attendee availability analysis with meeting room capacity consideration
-
-**Intelligent Features:**
-- Automatic time zone detection from user profiles
-- Optimal time slot suggestions for all attendees
-- Meeting room booking based on capacity requirements
-- Alternative time suggestions when conflicts occur
-- Recurring event management with series-wide operations
-
-**Microsoft 365 Calendar API Integration:**
-- Direct integration with Outlook Calendar via Microsoft Graph API
-- Preservation of existing meeting features and formatting
-- Support for Teams meeting links and virtual meeting rooms
-- Synchronization with mobile and desktop Outlook clients
+- **Meeting Creation:** Intelligent meeting creation for their own email
+- **Meeting Updates:** Change management for their own email
+- **Meeting Cancellation:** Cancel meeting for their own email
+- **Event Retrieval:** Smart filtering for their own email
 
 ##### Sheet Management Tools
 
 Spreadsheet integration transforms complex Excel operations into simple conversational requests. Users can query data, update values, and generate reports without understanding Excel formulas or navigation. The system maintains full compatibility with Microsoft 365 Excel while adding intelligent features.
 
 **Core Operations:**
-- **Sheet Creation:** Create new spreadsheets with pre-built templates (budget tracker, project timeline, inventory management, sales reports)
-- **Data Retrieval:** Intelligent parsing with automatic header detection, data type recognition, and formatting preservation
-- **Data Updates:** Bulk operations with formula validation, audit trails, and automatic data type conversion
-- **Natural Language Queries:** Ask questions like "What's the total revenue for Q3?" or "Show me expenses over $1000"
-- **Sheet Discovery:** Find and list spreadsheets with smart filtering and search capabilities
-
-**Intelligent Features:**
-- Natural language to spreadsheet query translation
-- Automatic aggregations, filtering, and statistical analysis
-- Smart suggestions for data visualization and charts
-- Formula validation and error prevention
-- Real-time collaborative editing support
-
-**Microsoft 365 Excel API Integration:**
-- Direct integration with Excel Online and desktop Excel via Microsoft Graph API
-- Support for complex formulas, pivot tables, and macros
-- Automatic synchronization across all Microsoft 365 applications
-- Preservation of existing formatting and validation rules
+- **Sheet Creation:** Create new ticket for existing sheet
+- **Data Retrieval:** Get ticket based on code
+- **Data Updates:** Update ticket status
 
 ##### Knowledge Base Tools
 
@@ -398,29 +360,6 @@ The knowledge base system represents our most sophisticated tool, implementing s
 - **Document Processing:** MCP knowledge tools process documents with chunking and entity extraction
 - **Semantic Search:** Context-aware search with multi-vector search and re-ranking
 - **Completion Notification:** WhatsApp notification sent when indexing is complete
-
-**Advanced Processing Pipeline:**
-- Automatic document type and language detection
-- Smart chunking with semantic boundary preservation (512-1024 tokens with 100 token overlap)
-- Advanced text extraction using Docling with table understanding and image OCR
-- Entity extraction and relationship graph building
-- Multi-language support with automatic translation capabilities
-
-**Search Capabilities:**
-- Hybrid search combining semantic similarity and keyword matching
-- Query understanding and expansion for better results
-- Context-aware re-ranking using specialized cross-encoder models
-- Permission-filtered results based on user access levels
-- Intelligent result deduplication and highlighting
-
-**Processing Workflow:**
-1. Users manually upload documents to OneDrive
-2. Users send WhatsApp message requesting indexing/update
-3. MCP knowledge tool triggers document processing via OneDrive API
-4. Redis pub/sub publishes indexing job to background worker
-5. Documents processed: chunking, embedding via OpenAI, stored in Pinecone
-6. WhatsApp notification sent when processing complete
-7. Support for multiple document formats (PDF, Word, Excel, PowerPoint, text files)
 
 ### LangGraph Engine (Python)
 
@@ -588,48 +527,19 @@ HMAC (Hash-based Message Authentication Code) provides cryptographic assurance t
 **Implementation Details:**
 - **Unique Secret Keys**: Each webhook endpoint maintains its own 256-bit secret key, stored in a secure key management system
 - **Request Signing**: Every incoming request includes an HMAC-SHA256 signature computed over the request body and timestamp
-- **Signature Verification**: The receiving service recomputes the signature and compares it with the provided signature
-- **Timestamp Window**: Requests older than 5 minutes are rejected to prevent replay attacks
-- **Key Rotation**: Automatic key rotation every 90 days with graceful transition periods
 
-**Security Benefits:**
-- Prevents man-in-the-middle attacks
-- Ensures message integrity
-- Provides non-repudiation
-- Enables audit trails
 
-#### 2. Advanced Rate Limiting
+#### 2. Rate Limiting
 
 Our rate limiting system goes beyond simple request counting, implementing intelligent throttling that adapts to usage patterns while preventing abuse.
 
-**Multi-Level Rate Limiting:**
 - **Per-User Limits**: Default 10 requests per second, burstable to 20 for 10 seconds
-- **Per-Endpoint Limits**: Different limits for read vs. write operations
-- **Global Limits**: System-wide protection against DDoS attacks
-- **Adaptive Throttling**: Automatically adjusts based on system load
 
-**Implementation Features:**
-- **Token Bucket Algorithm**: Allows burst traffic while maintaining average rates
-- **Distributed Rate Limiting**: Synchronized across all service instances using Redis
-- **Graceful Degradation**: Returns helpful error messages with retry-after headers
-- **Whitelist Support**: Trusted services can have elevated limits
-- **Analytics Integration**: Rate limit violations trigger security alerts
+#### 3. Encryption
 
-#### 3. Comprehensive Data Protection
+Data protection encompasses encryption, access control, and privacy measures throughout the data lifecycle. 
 
-Data protection encompasses encryption, access control, and privacy measures throughout the data lifecycle.
-
-**Encryption Strategy:**
 - **In Transit**: TLS 1.3 for all external communications with perfect forward secrecy
-- **At Rest**: AES-256-GCM encryption for database fields containing PII
-- **Key Management**: Hardware Security Module (HSM) for key generation and storage
-- **Field-Level Encryption**: Selective encryption for sensitive fields while maintaining searchability
-
-**Privacy Measures:**
-- **Data Minimization**: Only collect necessary information
-- **Pseudonymization**: Replace identifiers with pseudonyms where possible
-- **Right to Erasure**: Automated data deletion workflows
-- **Audit Logging**: Comprehensive logs of all data access
 
 #### 4. Dynamic Access Control
 **Role-Based Access Control:**
@@ -699,7 +609,6 @@ graph TB
 2. **System Metrics**
    - CPU and memory utilization
    - Database connection pools
-   - Queue depths
 
 3. **Business Metrics**
    - Active users
