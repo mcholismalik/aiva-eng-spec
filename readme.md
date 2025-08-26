@@ -66,41 +66,21 @@ The technology stack is organized from communication to backend, showing the com
 - **Sentry**: Error tracking and performance monitoring
 - **Custom Domain**: Webhook endpoints and API access
 
-## Goals and Objectives
+## User Stories
 
-### Primary Goals
-
-1. **Calendar Automation**
-   - Automate meeting scheduling, updates, and cancellations via WhatsApp
-   - Handle conflict resolution and availability checking
-   - Send configurable meeting reminders and notifications
-
-2. **Sheet Automation (Helpdesk Management)**
-   - Automate record creation, updates, and status tracking via spreadsheets
-   - Enable data queries and reporting through natural language
-   - Provide automated notifications and status updates
-
-3. **Knowledge Enterprise**
-   - Enable Q&A access to company knowledge base via WhatsApp
-   - Process manual document uploads and trigger indexing workflows
-   - Deliver contextual search results based on user permissions
-
-### User Stories
-
-#### Admin Role
+### Admin Role
 - **User Management**: CRUD operations for users and role assignments via natural language
-- **System Monitoring**: Query system metrics and performance data
-- **Knowledge Administration**: Trigger document indexing after manual OneDrive uploads and manage access permissions
 
-#### Staff Role
-- **Calendar Management**: Full calendar CRUD operations via natural language interface
-- **Sheet Management**: Create, update, and query helpdesk records with status tracking
-- **Knowledge Queries**: Search organizational documents and procedures
+### Staff Role
+- **Sheet Automation**: Query & update helpdesk records with status tracking
+- **Knowledge Enterprise**: Trigger document indexing after manual OneDrive uploads and manage access permissions
 
-#### User Role
-- **User Onboarding**: Register and authenticate using phone number verification
-- **Meeting Scheduling**: Create and manage personal calendar events
-- **Notification System**: Receive sheet updates and configurable meeting reminders (default: 2 hours before)
+### User Role
+- **Onboarding**: Register and authenticate using email verification
+- **Calendar Automation**: Create and manage personal calendar events
+- **Sheet Automation**: Create & query personal ticket records
+- **Knowledge Enterprise**: QnA based on organizational documents and procedures
+- **Notification System**: Receive sheet updates and configurable meeting reminders (default: 1 hours before)
 
 ## System Architecture
 
