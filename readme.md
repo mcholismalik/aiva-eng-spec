@@ -17,8 +17,8 @@ This document defines the engineering specification for an AI Virtual Assistant 
 
 The system uses LangGraph for conversation orchestration and MCP (Model Context Protocol) for tool management, providing natural language automation for:
 - **Calendar Automation**: Meeting scheduling, conflict resolution, and reminder notifications
-- **Sheet Automation**: Spreadsheet-based helpdesk operations via Microsoft 365 Excel  
-- **Knowledge Enterprise**: Company Q&A access with manual document indexing workflows
+- **Sheet Automation**: Spreadsheet-based helpdesk automated operation 
+- **Knowledge Enterprise**: Enterprise Q&A with semantic search across company documents
 
 The assistant uses OpenAI for natural language processing, Pinecone for vector search, Microsoft 365 APIs for calendar and document integration, and Redis for async job processing. The modular architecture supports role-based access control and organizational scaling.
 
@@ -26,14 +26,14 @@ The assistant uses OpenAI for natural language processing, Pinecone for vector s
 
 ### Problem Statement
 Organizations experience inefficiencies in three operational areas:
-- **Calendar Management**: Manual meeting scheduling leads to manual efforts
+- **Calendar Management**: Manual meeting scheduling leads to manual efforts & miss schedule
 - **Helpdesk Operations**: Sheet-based tracking via traditional systems creates bottlenecks and delays
 - **Knowledge Access**: Company information scattered across documents with poor searchability
 
 ### Solution Overview
 An AI virtual assistant accessible via WhatsApp that automates:
-- **Calendar Automation**: Intelligent meeting management automation
-- **Sheet Automation**: Helpdesk management through automated spreadsheet operations
+- **Calendar Automation**:  Meeting scheduling, conflict resolution, and reminder notifications
+- **Sheet Automation**: Spreadsheet-based helpdesk automated operation
 - **Knowledge Enterprise**: Enterprise Q&A with semantic search across company documents
 
 ### Technology Stack
