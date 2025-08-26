@@ -35,7 +35,6 @@ An AI virtual assistant accessible via WhatsApp that automates:
 - **Calendar Automation**: Intelligent meeting management automation
 - **Sheet Automation**: Helpdesk management through automated spreadsheet operations
 - **Knowledge Enterprise**: Enterprise Q&A with semantic search across company documents
-- Maintains role-based security and integrates with existing Microsoft 365 infrastructure
 
 ### Technology Stack
 
