@@ -3,11 +3,12 @@
 ## Table of Contents
 1. [Executive Summary](#executive-summary)
 2. [Background](#background)
-3. [Goals and Objectives](#goals-and-objectives)
-4. [System Architecture](#system-architecture)
-5. [Component Specifications](#component-specifications)
-6. [Security Architecture](#security-architecture)
-7. [Deployment Strategy](#deployment-strategy)
+3. [User Stories](#user-stories)
+4. [Technology Stack](#technology-stack)
+5. [System Architecture](#system-architecture)
+6. [Component Specifications](#component-specifications)
+7. [Security Architecture](#security-architecture)
+8. [Deployment Strategy](#deployment-strategy)
 
 ---
 
@@ -36,36 +37,6 @@ An AI virtual assistant accessible via WhatsApp that automates:
 - **Sheet Automation**: Spreadsheet-based helpdesk automated operation
 - **Knowledge Enterprise**: Enterprise Q&A with semantic search across company documents
 
-### Technology Stack
-
-The technology stack is organized from communication to backend, showing the complete flow from user interaction to data storage:
-
-#### Communication Layer  
-- **WAHA (WhatsApp Business API)**: Message handling, delivery, and webhook management
-- **Webhook Handler**: Request processing, validation, and routing
-
-#### Processing & Service Layer
-- **LangGraph Engine (Python)**: AI conversation orchestration and workflow management
-- **MCP Server (Go)**: Tool execution, external integrations, and business logic
-- **OpenAI API**: Natural language processing, reasoning, and text embeddings
-
-#### Data Layer
-- **Pinecone**: Vector database for semantic search and knowledge retrieval
-- **PostgreSQL**: User management, authentication, and relational data storage
-- **Redis**: Caching, pub/sub messaging, and session management
-- **Microsoft 365 APIs**:
-  - **Excel API**: Spreadsheet operations, data manipulation, and sheet management
-  - **Calendar API**: Meeting scheduling, availability checking, and event management
-  - **OneDrive API**: Document storage, retrieval, and knowledge base file access
-
-#### Infrastructure Layer
-- **Docker**: Application containerization and deployment
-- **Nginx**: Reverse proxy and load balancing
-- **VPS**: Virtual private server hosting
-- **GitLab**: Source code repository and CI/CD pipeline automation
-- **Sentry**: Error tracking and performance monitoring
-- **Custom Domain**: Webhook endpoints and API access
-
 ## User Stories
 
 ### Admin Role
@@ -81,6 +52,36 @@ The technology stack is organized from communication to backend, showing the com
 - **Sheet Automation**: Create & query personal ticket records
 - **Knowledge Enterprise**: QnA based on organizational documents and procedures
 - **Notification System**: Receive sheet updates and configurable meeting reminders (default: 1 hours before)
+
+## Technology Stack
+
+The technology stack is organized from communication to backend, showing the complete flow from user interaction to data storage:
+
+### Communication Layer  
+- **WAHA (WhatsApp Business API)**: Message handling, delivery, and webhook management
+- **Webhook Handler**: Request processing, validation, and routing
+
+### Processing & Service Layer
+- **LangGraph Engine (Python)**: AI conversation orchestration and workflow management
+- **MCP Server (Go)**: Tool execution, external integrations, and business logic
+- **OpenAI API**: Natural language processing, reasoning, and text embeddings
+
+### Data Layer
+- **Pinecone**: Vector database for semantic search and knowledge retrieval
+- **PostgreSQL**: User management, authentication, and relational data storage
+- **Redis**: Caching, pub/sub messaging, and session management
+- **Microsoft 365 APIs**:
+  - **Excel API**: Spreadsheet operations, data manipulation, and sheet management
+  - **Calendar API**: Meeting scheduling, availability checking, and event management
+  - **OneDrive API**: Document storage, retrieval, and knowledge base file access
+
+### Infrastructure Layer
+- **Docker**: Application containerization and deployment
+- **Nginx**: Reverse proxy and load balancing
+- **VPS**: Virtual private server hosting
+- **GitLab**: Source code repository and CI/CD pipeline automation
+- **Sentry**: Error tracking and performance monitoring
+- **Custom Domain**: Webhook endpoints and API access
 
 ## System Architecture
 
