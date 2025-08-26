@@ -16,7 +16,7 @@
 This document defines the engineering specification for an AI Virtual Assistant system that automates three organizational functions through WhatsApp integration: calendar management, sheet-based helpdesk operations, and enterprise knowledge access.
 
 The system uses LangGraph for conversation orchestration and MCP (Model Context Protocol) for tool management, providing natural language automation for:
-- **Calendar Automation**: Meeting scheduling, conflict resolution, and reminder notifications
+- **Calendar Automation**: Meeting scheduling and reminder notifications
 - **Sheet Automation**: Spreadsheet-based helpdesk automated operation 
 - **Knowledge Enterprise**: Enterprise Q&A with semantic search across company documents
 
@@ -32,7 +32,7 @@ Organizations experience inefficiencies in three operational areas:
 
 ### Solution Overview
 An AI virtual assistant accessible via WhatsApp that automates:
-- **Calendar Automation**:  Meeting scheduling, conflict resolution, and reminder notifications
+- **Calendar Automation**:  Meeting scheduling and reminder notifications
 - **Sheet Automation**: Spreadsheet-based helpdesk automated operation
 - **Knowledge Enterprise**: Enterprise Q&A with semantic search across company documents
 
