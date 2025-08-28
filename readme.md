@@ -3,12 +3,49 @@
 ## Table of Contents
 1. [Executive Summary](#executive-summary)
 2. [Background](#background)
+   - 2.1 [Problem Statement](#problem-statement)
+   - 2.2 [Solution Overview](#solution-overview)
 3. [User Stories](#user-stories)
+   - 3.1 [Admin Role](#admin-role)
+   - 3.2 [Staff Role](#staff-role)
+   - 3.3 [User Role](#user-role)
 4. [Technology Stack](#technology-stack)
+   - 4.1 [Communication Layer](#communication-layer)
+   - 4.2 [Processing & Service Layer](#processing--service-layer)
+   - 4.3 [Data Layer](#data-layer)
+   - 4.4 [Infrastructure Layer](#infrastructure-layer)
 5. [System Architecture](#system-architecture)
+   - 5.1 [High-Level Architecture](#high-level-architecture)
+   - 5.2 [Data Flow Sequence](#data-flow-sequence)
+      - 5.2.1 [Detailed Flow Analysis](#detailed-flow-analysis)
 6. [Component Specifications](#component-specifications)
+   - 6.1 [MCP Server (Golang)](#mcp-server-golang)
+      - 6.1.1 [Architecture](#architecture)
+      - 6.1.2 [Tool Specifications](#tool-specifications)
+         - 6.1.2.1 [User Management Tools](#user-management-tools)
+         - 6.1.2.2 [Calendar Management Tools](#calendar-management-tools)
+         - 6.1.2.3 [Sheet Management Tools](#sheet-management-tools)
+         - 6.1.2.4 [Knowledge Base Tools](#knowledge-base-tools)
+      - 6.1.3 [Knowledge Base](#knowledge-base)
+   - 6.2 [LangGraph Engine (Python)](#langgraph-engine-python)
+      - 6.2.1 [Architecture](#architecture-1)
+      - 6.2.2 [Module Specifications](#module-specifications)
+         - 6.2.2.1 [Security Module](#security-module)
+         - 6.2.2.2 [Context Module](#context-module)
+         - 6.2.2.3 [Reasoning Module](#reasoning-module)
+         - 6.2.2.4 [Communication Module](#communication-module)
+      - 6.2.3 [State Management](#state-management)
 7. [Security Architecture](#security-architecture)
+   - 7.1 [Authentication & Authorization](#authentication--authorization)
+   - 7.2 [Security Measures](#security-measures)
+      - 7.2.1 [HMAC Authentication](#1-hmac-authentication)
+      - 7.2.2 [Dynamic Access Control](#2-dynamic-access-control)
 8. [Deployment Strategy](#deployment-strategy)
+   - 8.1 [Infrastructure Architecture](#infrastructure-architecture)
+   - 8.2 [CI/CD Pipeline](#cicd-pipeline)
+9. [Appendix](#appendix)
+   - 9.1 [Glossary](#glossary)
+   - 9.2 [References](#references)
 
 ---
 
@@ -80,7 +117,6 @@ The technology stack is organized from communication to backend, showing the com
 - **Nginx**: Reverse proxy and load balancing
 - **VPS**: Virtual private server hosting
 - **GitLab**: Source code repository and CI/CD pipeline automation
-- **Sentry**: Error tracking and performance monitoring
 - **Custom Domain**: Webhook endpoints and API access
 
 ## System Architecture
@@ -178,7 +214,7 @@ sequenceDiagram
     
     activate LG
     LG->>LG: Security Check
-    Note over LG: Validate user, check permissions, apply rate limits
+    Note over LG: Validate user, check permissions
     
     LG->>LG: Context Analysis
     Note over LG: Analyze query complexity, synthesize conversation history
@@ -224,7 +260,7 @@ sequenceDiagram
 
 1. **Message Reception and Validation**: When a user sends a message via WhatsApp, it reaches the WAHA (WhatsApp HTTP API) service. WAHA handles the WhatsApp Business API functions including encryption, delivery receipts, and media handling. The webhook handler performs initial validation using HMAC signatures to verify the request source.
 
-2. **Security Layer Processing**: Before business logic execution, the security module validates user identity using phone number as the primary identifier. It verifies user onboarding status, retrieves role-based permissions, and applies rate limiting to prevent abuse. Unauthorized users receive an onboarding message.
+2. **Security Layer Processing**: Before business logic execution, the security module validates user identity using phone number as the primary identifier. It verifies user onboarding status and retrieves role-based permissions. Unauthorized users receive an onboarding message.
 
 3. **Context Understanding**: The context module analyzes incoming messages within conversation history. It uses a sliding window approach to maintain relevant context while managing memory efficiently. Query complexity analysis determines whether the request requires simple tool execution or multi-step reasoning.
 
@@ -246,7 +282,7 @@ This section provides detailed technical specifications for each major component
 
 The MCP (Model Context Protocol) Server is the core tool execution layer. Written in Go for concurrency support and low-latency performance, the MCP Server provides a unified interface for external integrations. This abstraction layer isolates AI orchestration logic from API complexities, authentication mechanisms, and data formats.
 
-#### Architecture Design
+#### Architecture
 
 The MCP Server follows a modular architecture with clear separation between API layer, business logic, and external integrations. This design enables independent component testing and allows new tool addition without affecting existing functionality.
 
@@ -300,13 +336,13 @@ Each tool in the MCP Server is a self-contained module with defined inputs, outp
 
 User management provides the foundation for security and personalization features. These tools handle the complete user lifecycle from onboarding through deactivation, maintaining data integrity and security.
 
-**Core Capabilities:**
+Core Capabilities:
 - **User Creation:** Onboards new users with phone number verification, email validation, and role assignment
 - **User Retrieval:** Flexible lookup by phone number, email, or user ID with optional permission details
 - **User Updates:** Modify user attributes with comprehensive audit trails and validation
 - **User Deactivation:** Soft deletion with resource reassignment and session revocation
 
-**Key Features:**
+Key Features:
 - Phone number uniqueness validation with international format support
 - Email domain whitelisting for corporate security
 - Role-based permission system with admin approval for privilege changes
@@ -315,7 +351,7 @@ User management provides the foundation for security and personalization feature
 
 Calendar integration provides meeting management capabilities that process natural language requests and handle scheduling scenarios. The system integrates with Microsoft 365 Calendar, maintaining compatibility with existing organizational workflows.
 
-**Core Operations:**
+Core Operations:
 - **Meeting Creation:** Intelligent meeting creation for their own email
 - **Meeting Updates:** Change management for their own email
 - **Meeting Cancellation:** Cancel meeting for their own email
@@ -325,7 +361,7 @@ Calendar integration provides meeting management capabilities that process natur
 
 Spreadsheet integration converts complex Excel operations into conversational requests. Users can query data, update values, and generate reports without understanding Excel formulas or navigation. The system maintains compatibility with Microsoft 365 Excel while adding features.
 
-**Core Operations:**
+Core Operations:
 - **Sheet Creation:** Create new ticket for existing sheet
 - **Data Retrieval:** Get ticket based on code
 - **Data Updates:** Update ticket status
@@ -334,96 +370,18 @@ Spreadsheet integration converts complex Excel operations into conversational re
 
 The knowledge base system implements RAG (Retrieval-Augmented Generation) techniques. It transforms static documents into a queryable knowledge graph that processes context, relationships, and semantic meaning.
 
-**Core Operations:**
+Core Operations:
 - **Manual Document Upload:** Users manually upload documents to OneDrive outside of WhatsApp interface
 - **Indexing Trigger:** Users notify via WhatsApp when documents need to be indexed or updated
 - **Document Processing:** MCP knowledge tools process documents with chunking and entity extraction
 - **Semantic Search:** Context-aware search with multi-vector search and re-ranking
 - **Completion Notification:** WhatsApp notification sent when indexing is complete
 
-### LangGraph Engine (Python)
+#### Knowledge Base
 
-The LangGraph Engine serves as the cognitive center of the virtual assistant, orchestrating conversation flows while maintaining state across interactions. Built on LangChain's LangGraph framework, it implements a directed graph architecture where nodes represent processing steps and edges define conversation state flow.
+The knowledge base system implements a comprehensive document processing and retrieval pipeline that transforms static organizational documents into an intelligent, queryable knowledge repository. This system bridges the gap between unstructured company information and instant, contextual answers through WhatsApp.
 
-The implementation uses LangGraph's capabilities to handle multi-step reasoning, conditional branching, and long-running conversations across multiple user interactions. Unlike traditional chatbots that treat each message independently, this system maintains conversational context, enabling multi-turn interactions.
-
-Python for the LangGraph Engine provides access to the AI/ML ecosystem while maintaining code readability and development capabilities. The engine is horizontally scalable, with each conversation maintaining its own state graph that persists and resumes across server restarts.
-
-#### Module Architecture
-
-The LangGraph Engine uses a modular architecture where each module represents a node in the conversation graph. This design enables separation of concerns, independent testing, and conversation flow modification without affecting core logic.
-
-```mermaid
-graph TB
-    subgraph "LangGraph Core"
-        ST[State Manager]
-        GR[Graph Runtime]
-        TC[Tool Client]
-    end
-    
-    subgraph "Processing Modules"
-        SEC[Security Module]
-        CTX[Context Module]
-        RSN[Reasoning Module]
-        COM[Communication Module]
-    end
-    
-    subgraph "Support Services"
-        CACHE[Cache Manager]
-    end
-    
-    ST <--> GR
-    GR <--> TC
-    GR --> SEC
-    SEC --> CTX
-    CTX --> RSN
-    RSN --> COM
-    
-    SEC <--> CACHE
-    CTX <--> CACHE
-```
-
-#### Module Specifications
-
-##### Security Module
-The Security Module serves as the first line of defense for every user interaction. It validates user identity through phone number verification, checks role-based permissions, and applies configurable rate limiting to prevent abuse. The module implements HMAC signature verification to ensure webhook authenticity and maintains comprehensive audit logs for all security events.
-
-Key responsibilities include user validation, permission filtering based on roles, rate limit enforcement, and webhook authentication. The module integrates with the user management system to retrieve current permissions and can dynamically adjust rate limits based on user behavior patterns.
-
-##### Context Module
-The Context Module manages the conversational state and memory that makes our assistant feel intelligent and aware. It analyzes incoming queries to determine complexity levels, synthesizes conversation history into meaningful context summaries, and extracts relevant entities like dates, names, and locations.
-
-This module implements a sliding window approach to conversation history, ensuring relevant context is maintained while managing memory efficiently. It handles query complexity analysis to route simple requests through fast paths while ensuring complex multi-step requests receive appropriate processing resources.
-
-##### Reasoning Module
-The Reasoning Module represents the cognitive center of our assistant, transforming user intents into executable plans. It creates detailed execution plans that break complex requests into manageable steps, handles tool selection based on available capabilities, and manages parallel execution when possible.
-
-The module excels at handling ambiguous queries by generating clarification requests and can optimize execution plans for better performance. It maintains a sophisticated understanding of tool dependencies and can adapt plans based on intermediate results or errors.
-
-##### Communication Module
-The Communication Module transforms structured data and results into natural, conversational responses. It formats responses based on user preferences, chunks long messages to comply with WhatsApp limits, and adds contextual quick reply suggestions to enhance user experience.
-
-The module handles proactive notifications, manages response personalization, and ensures consistent communication style across all interactions. It can adapt its communication style based on user behavior patterns and interaction history.
-
-#### State Management
-
-```mermaid
-stateDiagram-v2
-    [*] --> Initialization
-    Initialization --> Security_Check
-    Security_Check --> Blocked: User Not Authorized
-    Security_Check --> Context_Analysis: User Authorized
-    Context_Analysis --> Planning
-    Planning --> Execution
-    Execution --> Response_Formatting
-    Response_Formatting --> Message_Delivery
-    Message_Delivery --> [*]
-    
-    Execution --> Error_Handling: Error Occurred
-    Error_Handling --> Response_Formatting
-```
-
-### Knowledge Base Architecture
+The implementation follows a two-phase approach: document ingestion and query processing. During ingestion, documents manually uploaded to OneDrive are processed through advanced NLP techniques including intelligent chunking, entity extraction, and semantic embedding. The query phase leverages vector similarity search combined with re-ranking algorithms to deliver accurate, context-aware responses.
 
 ```mermaid
 graph TB
@@ -465,6 +423,92 @@ graph TB
     RC --> WR
 ```
 
+### LangGraph Engine (Python)
+
+The LangGraph Engine serves as the cognitive center of the virtual assistant, orchestrating conversation flows while maintaining state across interactions. Built on LangChain's LangGraph framework, it implements a directed graph architecture where nodes represent processing steps and edges define conversation state flow.
+
+The implementation uses LangGraph's capabilities to handle multi-step reasoning, conditional branching, and long-running conversations across multiple user interactions. Unlike traditional chatbots that treat each message independently, this system maintains conversational context, enabling multi-turn interactions.
+
+Python for the LangGraph Engine provides access to the AI/ML ecosystem while maintaining code readability and development capabilities. The engine is horizontally scalable, with each conversation maintaining its own state graph that persists and resumes across server restarts.
+
+#### Architecture
+
+The LangGraph Engine uses a modular architecture where each module represents a node in the conversation graph. This design enables separation of concerns, independent testing, and conversation flow modification without affecting core logic.
+
+```mermaid
+graph TB
+    subgraph "LangGraph Core"
+        ST[State Manager]
+        GR[Graph Runtime]
+        TC[Tool Client]
+    end
+    
+    subgraph "Processing Modules"
+        SEC[Security Module]
+        CTX[Context Module]
+        RSN[Reasoning Module]
+        COM[Communication Module]
+    end
+    
+    subgraph "Support Services"
+        CACHE[Cache Manager]
+    end
+    
+    ST <--> GR
+    GR <--> TC
+    GR --> SEC
+    SEC --> CTX
+    CTX --> RSN
+    RSN --> COM
+    
+    SEC <--> CACHE
+    CTX <--> CACHE
+```
+
+#### Module Specifications
+
+##### Security Module
+The Security Module serves as the first line of defense for every user interaction. It validates user identity through phone number verification and checks role-based permissions. The module implements HMAC signature verification to ensure webhook authenticity and maintains comprehensive audit logs for all security events.
+
+Key responsibilities include user validation, permission filtering based on roles, and webhook authentication. The module integrates with the user management system to retrieve current permissions.
+
+##### Context Module
+The Context Module manages the conversational state and memory that makes our assistant feel intelligent and aware. It analyzes incoming queries to determine complexity levels, synthesizes conversation history into meaningful context summaries, and extracts relevant entities like dates, names, and locations.
+
+This module implements a sliding window approach to conversation history, ensuring relevant context is maintained while managing memory efficiently. It handles query complexity analysis to route simple requests through fast paths while ensuring complex multi-step requests receive appropriate processing resources.
+
+##### Reasoning Module
+The Reasoning Module represents the cognitive center of our assistant, transforming user intents into executable plans. It creates detailed execution plans that break complex requests into manageable steps, handles tool selection based on available capabilities, and manages parallel execution when possible.
+
+The module excels at handling ambiguous queries by generating clarification requests and can optimize execution plans for better performance. It maintains a sophisticated understanding of tool dependencies and can adapt plans based on intermediate results or errors.
+
+##### Communication Module
+The Communication Module transforms structured data and results into natural, conversational responses. It formats responses based on user preferences, chunks long messages to comply with WhatsApp limits, and adds contextual quick reply suggestions to enhance user experience.
+
+The module handles proactive notifications, manages response personalization, and ensures consistent communication style across all interactions. It can adapt its communication style based on user behavior patterns and interaction history.
+
+#### State Management
+
+The state management system maintains conversation context and flow control across the entire assistant lifecycle. Built on LangGraph's state graph architecture, it enables the assistant to remember previous interactions, track multi-step operations, and handle complex conversational flows that span multiple messages.
+
+Each conversation maintains its own isolated state graph that persists across server restarts. The state transitions are deterministic, ensuring consistent behavior and enabling debugging of conversation flows. The system implements checkpointing at each state transition, allowing conversations to resume from any point and providing resilience against failures.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Initialization
+    Initialization --> Security_Check
+    Security_Check --> Blocked: User Not Authorized
+    Security_Check --> Context_Analysis: User Authorized
+    Context_Analysis --> Planning
+    Planning --> Execution
+    Execution --> Response_Formatting
+    Response_Formatting --> Message_Delivery
+    Message_Delivery --> [*]
+    
+    Execution --> Error_Handling: Error Occurred
+    Error_Handling --> Response_Formatting
+```
+
 ## Security Architecture
 
 Security is a fundamental design principle throughout the architecture. The multi-layered security approach ensures data protection, user privacy, and system integrity while maintaining conversational accessibility. The implementation uses defense-in-depth strategies, assuming breach at every layer and implementing compensating controls.
@@ -504,25 +548,13 @@ The security implementation follows industry best practices while adapting to co
 
 HMAC (Hash-based Message Authentication Code) provides cryptographic assurance that webhook requests originate from trusted sources. This prevents unauthorized systems from injecting commands or accessing user data.
 
-**Implementation Details:**
+Implementation Details:
 - **Unique Secret Keys**: Each webhook endpoint maintains its own 256-bit secret key, stored in a secure key management system
 - **Request Signing**: Every incoming request includes an HMAC-SHA256 signature computed over the request body and timestamp
 
 
-#### 2. Rate Limiting
-
-The rate limiting system implements intelligent throttling that adapts to usage patterns while preventing abuse.
-
-- **Per-User Limits**: Default 10 requests per second, burstable to 20 for 10 seconds
-
-#### 3. Encryption
-
-Data protection encompasses encryption, access control, and privacy measures throughout the data lifecycle. 
-
-- **In Transit**: TLS 1.3 for all external communications with perfect forward secrecy
-
-#### 4. Dynamic Access Control
-**Role-Based Access Control:**
+#### 2. Dynamic Access Control
+Role-Based Access Control:
 - **Admin:** Full system access including user management, system configuration, and all tool operations
 - **Staff:** Complete access to calendar management, spreadsheet operations, and knowledge base including indexing capabilities
 - **User:** Limited access focused on self-service operations including onboarding, personal calendar management, read-only spreadsheet access, and knowledge base queries
@@ -567,33 +599,17 @@ graph TB
 
 ### CI/CD Pipeline
 
-**GitLab Pipeline:**
+GitLab Pipeline:
 - Source code repository and CI/CD automation via GitLab
 - Docker image builds for LangGraph (Python) and MCP Server (Go)
 - Automated testing and security scanning
 - VPS deployment using Docker containers
 
-**Pipeline Stages:**
+Pipeline Stages:
 1. **Build:** Create Docker images with proper versioning
 2. **Test:** Run unit tests and security scans
 3. **Deploy:** Push images to VPS and restart containers
 4. **Verify:** Health checks and smoke tests
-
-### Monitoring & Observability
-
-1. **Application Metrics**
-   - Request latency percentiles (p50, p95, p99)
-   - Tool execution times
-   - Error rates by module
-
-2. **System Metrics**
-   - CPU and memory utilization
-   - Database connection pools
-
-3. **Business Metrics**
-   - Active users
-   - Message volume
-   - Tool usage statistics
 
 ## Appendix
 
