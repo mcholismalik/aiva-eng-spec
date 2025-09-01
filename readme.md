@@ -78,17 +78,15 @@ An AI virtual assistant accessible via WhatsApp that automates:
 
 ### Admin Role
 - **User Management**: CRUD operations for users and role assignments via natural language
-
-### Staff Role
 - **Sheet Automation**: Query & update helpdesk records with status tracking
-- **Knowledge Enterprise**: Trigger document indexing after manual OneDrive uploads and manage access permissions
+- **Knowledge Enterprise**: Manage access permissions with automated document processing
 
 ### User Role
 - **Onboarding**: Register and authenticate using email verification
 - **Calendar Automation**: Create and manage personal calendar events
 - **Sheet Automation**: Create & query personal ticket records
 - **Knowledge Enterprise**: QnA based on organizational documents and procedures
-- **Notification System**: Receive sheet updates and configurable meeting reminders (default: 1 hours before)
+- **Notification System**: Receive sheet updates and configurable meeting reminders (default: 1 hour before)
 
 ## Technology Stack
 
@@ -337,10 +335,9 @@ Each tool in the MCP Server is a self-contained module with defined inputs, outp
 User management provides the foundation for security and personalization features. These tools handle the complete user lifecycle from onboarding through deactivation, maintaining data integrity and security.
 
 Core Capabilities:
-- **User Creation:** Onboards new users with phone number verification, email validation, and role assignment
-- **User Retrieval:** Flexible lookup by phone number, email, or user ID with optional permission details
-- **User Updates:** Modify user attributes with comprehensive audit trails and validation
-- **User Deactivation:** Soft deletion with resource reassignment and session revocation
+- **User Create:** Onboards new users with phone number verification, email validation, and role assignment
+- **User Read:** Flexible lookup by phone number, email, or user ID with optional permission details
+- **User Update:** Modify user attributes with comprehensive audit trails and validation
 
 Key Features:
 - Phone number uniqueness validation with international format support
@@ -352,49 +349,60 @@ Key Features:
 Calendar integration provides meeting management capabilities that process natural language requests and handle scheduling scenarios. The system integrates with Microsoft 365 Calendar, maintaining compatibility with existing organizational workflows.
 
 Core Operations:
-- **Meeting Creation:** Intelligent meeting creation for their own email
-- **Meeting Updates:** Change management for their own email
-- **Meeting Cancellation:** Cancel meeting for their own email
-- **Event Retrieval:** Smart filtering for their own email
+- **Meeting Create:** Intelligent meeting creation for their own email
+- **Meeting Read:** Smart filtering for their own email
+- **Meeting Update:** Change meeting for their own email
+- **Meeting Delete:** Cancel meeting for their own email
+
 
 ##### Sheet Management Tools
 
 Spreadsheet integration converts complex Excel operations into conversational requests. Users can query data, update values, and generate reports without understanding Excel formulas or navigation. The system maintains compatibility with Microsoft 365 Excel while adding features.
 
 Core Operations:
-- **Sheet Creation:** Create new ticket for existing sheet
-- **Data Retrieval:** Get ticket based on code
-- **Data Updates:** Update ticket status
+- **Sheet Create:** Insert ticket rows
+- **Sheet Read:** Get ticket based on code
+- **Sheet Update:** Update ticket status
+- **Sheet Delete:** Update ticket status
+
+##### Communication Tools
+
+Communication used as interface to send comms to various, in our case for now we will send to whatsapp via WAHA.
+
+Core Operations:
+- **Send to Group:** Sent to user
+- **Send to User:** Sent to group
 
 ##### Knowledge Base Tools
 
-The knowledge base system implements RAG (Retrieval-Augmented Generation) techniques. It transforms static documents into a queryable knowledge graph that processes context, relationships, and semantic meaning.
+The knowledge base system implements RAG (Retrieval-Augmented Generation) techniques with automated scheduler-based indexing. It transforms static documents into a queryable knowledge graph that processes context, relationships, and semantic meaning through intelligent monitoring and processing.
 
 Core Operations:
-- **Manual Document Upload:** Users manually upload documents to OneDrive outside of WhatsApp interface
-- **Indexing Trigger:** Users notify via WhatsApp when documents need to be indexed or updated
+- **Automated Document Monitoring:** Continuous monitoring of OneDrive for document changes via application-level configurable scheduler (default: 1 hour intervals, requires redeployment to modify)
+- **Intelligent Indexing:** Smart processing that upserts updated documents, indexes new documents, and skips unchanged documents for optimal performance
 - **Document Processing:** MCP knowledge tools process documents with chunking and entity extraction
 - **Semantic Search:** Context-aware search with multi-vector search and re-ranking
-- **Completion Notification:** WhatsApp notification sent when indexing is complete
+- **Admin Notifications:** Group WhatsApp notifications for indexing completion and new incoming tickets
 
 #### Knowledge Base
 
 The knowledge base system implements a comprehensive document processing and retrieval pipeline that transforms static organizational documents into an intelligent, queryable knowledge repository. This system bridges the gap between unstructured company information and instant, contextual answers through WhatsApp.
 
-The implementation follows a two-phase approach: document ingestion and query processing. During ingestion, documents manually uploaded to OneDrive are processed through advanced NLP techniques including intelligent chunking, entity extraction, and semantic embedding. The query phase leverages vector similarity search combined with re-ranking algorithms to deliver accurate, context-aware responses.
+The implementation follows an automated three-phase approach: continuous monitoring, intelligent indexing, and query processing. The scheduler-based monitoring continuously scans OneDrive for document changes at application-level configurable intervals (default: 1 hour, requires redeployment to modify). During intelligent indexing, only modified or new documents are processed through advanced NLP techniques including intelligent chunking, entity extraction, and semantic embedding, while unchanged documents are skipped to optimize performance. The query phase leverages vector similarity search combined with re-ranking algorithms to deliver accurate, context-aware responses.
 
 ```mermaid
 graph TB
-    subgraph "Manual Document Processing Pipeline"
-        MU[Manual Upload to OneDrive]
-        WA[WhatsApp Indexing Request]
-        MCP[MCP Knowledge Tool]
-        RP[Redis PubSub Job]
+    subgraph "Automated Document Processing Pipeline"
+        SCH[Configurable Scheduler]
+        ODM[OneDrive Monitor]
+        FCH[File Change Detection]
+        IIL[Intelligent Indexing Logic]
         DL[Docling Processor]
         CH[Chunking Engine]
         EM[OpenAI Embeddings]
         PC[(Pinecone Storage)]
-        WN[WhatsApp Completion Notification]
+        AGN[Admin Group Notification]
+        UN[User Notification]
     end
     
     subgraph "Query Pipeline"
@@ -406,14 +414,16 @@ graph TB
         WR[WhatsApp Response]
     end
     
-    MU --> WA
-    WA --> MCP
-    MCP --> RP
-    RP --> DL
+    SCH --> |Every 1 Hour| ODM
+    ODM --> FCH
+    FCH --> |New/Updated Files| IIL
+    IIL --> |Skip Unchanged| IIL
+    IIL --> |Process Changes| DL
     DL --> CH
     CH --> EM
     EM --> PC
-    PC --> WN
+    PC --> AGN
+    PC --> UN
     
     UQ --> QE
     QE --> VS
