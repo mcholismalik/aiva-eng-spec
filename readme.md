@@ -23,8 +23,8 @@
       - 6.1.1 [Architecture](#architecture)
       - 6.1.2 [Tool Specifications](#tool-specifications)
          - 6.1.2.1 [User Management Tools](#user-management-tools)
-         - 6.1.2.2 [Calendar Management Tools](#calendar-management-tools)
-         - 6.1.2.3 [Sheet Management Tools](#sheet-management-tools)
+         - 6.1.2.2 [Schedule Management Tools](#schedule-management-tools)
+         - 6.1.2.3 [Ticket Management Tools](#ticket-management-tools)
          - 6.1.2.4 [Knowledge Base Tools](#knowledge-base-tools)
       - 6.1.3 [Knowledge Base](#knowledge-base)
    - 6.2 [LangGraph Engine (Python)](#langgraph-engine-python)
@@ -59,7 +59,7 @@ The architecture leverages:
 - **Workflow Intelligence**: Each prompt contains step-by-step workflow definitions with associated tools that can operate in auto, confirm, or input modes
 
 Key capabilities include:
-- **Calendar Management**: Intelligent meeting scheduling with natural language understanding
+- **Schedule Management**: Intelligent meeting scheduling with natural language understanding
 - **Ticket Management**: Automated helpdesk operations with workflow-based ticket handling
 - **Knowledge Access**: Semantic search across enterprise documents with automated indexing
 - **User Management**: Role-based access control with dynamic permission management
@@ -70,29 +70,28 @@ The system uses OpenAI for reasoning and response generation, PostgreSQL for sta
 
 ### Problem Statement
 Organizations experience inefficiencies in three operational areas:
-- **Calendar Management**: Manual meeting scheduling leads to manual efforts & miss schedule
-- **Helpdesk Operations**: Sheet-based tracking via traditional systems creates bottlenecks and delays
+- **Schedule Management**: Manual meeting scheduling leads to manual efforts & miss schedule
+- **Helpdesk Operations**: Ticket-based tracking via traditional systems creates bottlenecks and delays
 - **Knowledge Access**: Company information scattered across documents with poor searchability
 
 ### Solution Overview
 An AI virtual assistant accessible via WhatsApp that automates:
-- **Calendar Automation**:  Meeting scheduling and reminder notifications
-- **Sheet Automation**: Spreadsheet-based helpdesk automated operation
+- **Schedule Automation**:  Meeting scheduling and reminder notifications
+- **Ticket Automation**: Spreadsheet-based helpdesk automated operation
 - **Knowledge Enterprise**: Enterprise Q&A with semantic search across company documents
 
 ## User Stories
 
 ### Admin Role
 - **User Management**: CRUD operations for users and role assignments via natural language
-- **Sheet Automation**: Query & update helpdesk records with status tracking
+- **Ticket Automation**: Query & update helpdesk records with status tracking
 - **Knowledge Enterprise**: Manage access permissions with automated document processing
 
 ### User Role
-- **Onboarding**: Register and authenticate using email verification
-- **Calendar Automation**: Create and manage personal calendar events
-- **Sheet Automation**: Create & query personal ticket records
+- **Schedule Automation**: Create and manage personal schedule events
+- **Ticket Automation**: Create & query personal ticket records
 - **Knowledge Enterprise**: QnA based on organizational documents and procedures
-- **Notification System**: Receive sheet updates and configurable meeting reminders (default: 1 hour before)
+- **Notification System**: Receive ticket updates and configurable meeting reminders (default: 1 hour before)
 
 ## Technology Stack
 
@@ -113,7 +112,7 @@ The technology stack is organized from communication to backend, showing the com
 - **Redis**: Caching, pub/sub messaging, and session management
 - **Microsoft 365 APIs**:
   - **Excel API**: Spreadsheet operations, data manipulation, and sheet management
-  - **Calendar API**: Meeting scheduling, availability checking, and event management
+  - **Schedule API**: Meeting scheduling, availability checking, and event management
   - **OneDrive API**: Document storage, retrieval, and knowledge base file access
 
 ### Infrastructure Layer
@@ -161,8 +160,8 @@ graph TB
         subgraph "Tool Registry"
             TR[Tools]
             UT[User Tools]
-            CT[Calendar Tools]
-            ST[Sheet Tools]
+            SCT[Schedule Tools]
+            TT[Ticket Tools]
             KT[Knowledge Tools]
             CMT[Communication Tools]
         end
@@ -174,7 +173,7 @@ graph TB
         RD[(Redis)]
         subgraph "Microsoft 365 APIs"
             EXL[Excel API]
-            CAL[Calendar API]
+            CAL[Schedule API]
             OD[OneDrive API]
         end
         OAI[OpenAI API]
@@ -199,20 +198,20 @@ graph TB
     PR --> KP
     
     TR --> UT
-    TR --> CT
-    TR --> ST
+    TR --> SCT
+    TR --> TT
     TR --> KT
     TR --> CMT
     
     UP -.-> UT
     TP -.-> ST
     TP -.-> CMT
-    SP -.-> CT
+    SP -.-> SCT
     KP -.-> KT
     
     UT <--> PG
-    CT <--> CAL
-    ST <--> EXL
+    SCT <--> CAL
+    TT <--> EXL
     KT <--> PC
     KT <--> RD
     KT <--> OD
@@ -363,7 +362,7 @@ graph LR
         subgraph "Tool Implementations"
             UT[User Tools]
             TT[Ticket Tools]
-            ST[Schedule Tools]
+            SCT[Schedule Tools]
             KT[Knowledge Tools]
             CT[Communication Tools]
         end
@@ -371,7 +370,7 @@ graph LR
         subgraph "External Adapters"
             PGA[PostgreSQL]
             EXLA[Excel API]
-            CALA[Calendar API]
+            CALA[Schedule API]
             ODA[OneDrive API]
             WAHAA[WAHA API]
             PINE[Pinecone]
@@ -388,19 +387,19 @@ graph LR
     
     TR --> UT
     TR --> TT
-    TR --> ST
+    TR --> SCT
     TR --> KT
     TR --> CT
     
     UP -.-> UT
     TP -.-> TT
     TP -.-> CT
-    SP -.-> ST
+    SP -.-> SCT
     KP -.-> KT
     
     UT --> PGA
     TT --> EXLA
-    ST --> CALA
+    SCT --> CALA
     KT --> PGA
     KT --> ODA
     KT --> PINE
@@ -432,9 +431,9 @@ Key Features:
 - Email domain whitelisting for corporate security
 - Role-based permission system with admin approval for privilege changes
 
-##### Calendar Management Tools
+##### Schedule Management Tools
 
-Calendar integration provides meeting management capabilities that process natural language requests and handle scheduling scenarios. The system integrates with Microsoft 365 Calendar, maintaining compatibility with existing organizational workflows.
+Schedule integration provides meeting management capabilities that process natural language requests and handle scheduling scenarios. The system integrates with Microsoft 365 Schedule, maintaining compatibility with existing organizational workflows.
 
 Core Operations:
 - **Meeting Create:** Intelligent meeting creation for their own email
@@ -443,15 +442,15 @@ Core Operations:
 - **Meeting Delete:** Cancel meeting for their own email
 
 
-##### Sheet Management Tools
+##### Ticket Management Tools
 
-Spreadsheet integration converts complex Excel operations into conversational requests. Users can query data, update values, and generate reports without understanding Excel formulas or navigation. The system maintains compatibility with Microsoft 365 Excel while adding features.
+Ticket integration converts complex Excel operations into conversational requests. Users can query data, update values, and generate reports without understanding Excel formulas or navigation. The system maintains compatibility with Microsoft 365 Excel while adding features.
 
 Core Operations:
-- **Sheet Create:** Insert ticket rows
-- **Sheet Read:** Get ticket based on code
-- **Sheet Update:** Update ticket status
-- **Sheet Delete:** Update ticket status
+- **Ticket Create:** Insert ticket rows
+- **Ticket Read:** Get ticket based on code
+- **Ticket Update:** Update ticket status
+- **Ticket Delete:** Update ticket status
 
 ##### Communication Tools
 
