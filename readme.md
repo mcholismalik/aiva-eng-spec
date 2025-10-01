@@ -38,7 +38,7 @@
 7. [Security Architecture](#security-architecture)
    - 7.1 [Authentication & Authorization](#authentication--authorization)
    - 7.2 [Security Measures](#security-measures)
-      - 7.2.1 [HMAC Authentication](#1-hmac-authentication)
+      - 7.2.1 [Authentication Security](#1-authentication-security)
       - 7.2.2 [Dynamic Access Control](#2-dynamic-access-control)
 8. [Deployment Strategy](#deployment-strategy)
    - 8.1 [Infrastructure Architecture](#infrastructure-architecture)
@@ -51,14 +51,20 @@
 
 ## Executive Summary
 
-This document defines the engineering specification for an AI Virtual Assistant system that automates three organizational functions through WhatsApp integration: calendar management, sheet-based helpdesk operations, and enterprise knowledge access.
+This document defines the engineering specification for an AI Virtual Assistant system that provides intelligent workflow automation through WhatsApp integration. The system orchestrates complex workflows through conversational interfaces, enabling natural language automation across organizational functions.
 
-The system uses LangGraph for conversation orchestration and MCP (Model Context Protocol) for tool management, providing natural language automation for:
-- **Calendar Automation**: Meeting scheduling and reminder notifications
-- **Sheet Automation**: Spreadsheet-based helpdesk automated operation 
-- **Knowledge Enterprise**: Enterprise Q&A with semantic search across company documents
+The architecture leverages:
+- **MCP (Model Context Protocol)**: Defines prompts as intelligent workflows and tools as executable functions with HITL (Human-in-the-Loop) configurations
+- **LangGraph Engine**: Orchestrates conversation flow through five specialized modules (Security, Context, Reasoning, Execution, Communication)
+- **Workflow Intelligence**: Each prompt contains step-by-step workflow definitions with associated tools that can operate in auto, confirm, or input modes
 
-The assistant uses OpenAI for natural language processing, Pinecone for vector search, Microsoft 365 APIs for calendar and document integration, and Redis for async job processing. The modular architecture supports role-based access control and organizational scaling.
+Key capabilities include:
+- **Calendar Management**: Intelligent meeting scheduling with natural language understanding
+- **Ticket Management**: Automated helpdesk operations with workflow-based ticket handling
+- **Knowledge Access**: Semantic search across enterprise documents with automated indexing
+- **User Management**: Role-based access control with dynamic permission management
+
+The system uses OpenAI for reasoning and response generation, PostgreSQL for state persistence, Microsoft 365 APIs for productivity integration, and Pinecone for vector search. The modular architecture enables workflow extensibility while maintaining security and user experience.
 
 ## Background
 
@@ -138,13 +144,22 @@ graph TB
             SEC[Security Module]
             CTX[Context Module]
             RSN[Reasoning Module]
+            EXE[Execution Module]
             COM[Communication Module]
         end
     end
     
     subgraph "Service Layer"
         MCP[MCP Server]
-        subgraph "MCP Tools"
+        subgraph "Prompt Registry"
+            PR[Prompts]
+            UP[User Prompts]
+            TP[Ticket Prompts]
+            SP[Schedule Prompts]
+            KP[Knowledge Prompts]
+        end
+        subgraph "Tool Registry"
+            TR[Tools]
             UT[User Tools]
             CT[Calendar Tools]
             ST[Sheet Tools]
@@ -171,13 +186,30 @@ graph TB
     LG <--> SEC
     SEC <--> CTX
     CTX <--> RSN
-    RSN <--> COM
+    RSN <--> EXE
+    EXE <--> COM
+    
     LG <--> MCP
-    MCP <--> UT
-    MCP <--> CT
-    MCP <--> ST
-    MCP <--> KT
-    MCP <--> CMT
+    MCP --> PR
+    MCP --> TR
+    
+    PR --> UP
+    PR --> TP
+    PR --> SP
+    PR --> KP
+    
+    TR --> UT
+    TR --> CT
+    TR --> ST
+    TR --> KT
+    TR --> CMT
+    
+    UP -.-> UT
+    TP -.-> ST
+    TP -.-> CMT
+    SP -.-> CT
+    KP -.-> KT
+    
     UT <--> PG
     CT <--> CAL
     ST <--> EXL
@@ -190,87 +222,114 @@ graph TB
 
 ### Data Flow Sequence
 
-The data flow follows a sequence that ensures security, maintains context, and delivers responses. Each step transforms user natural language input into actionable results.
+The data flow follows a modular orchestration pattern where each node in the LangGraph engine processes specific aspects of the conversation. The flow ensures security validation, intelligent context analysis, workflow-based reasoning, tool execution with HITL support, and natural response generation.
 
 ```mermaid
 sequenceDiagram
     participant U as User
     participant WA as WhatsApp
-    participant WH as Webhook
-    participant LG as LangGraph
+    participant API as API Layer
+    participant SEC as Security Module
+    participant CTX as Context Module
+    participant RSN as Reasoning Module
+    participant EXE as Execution Module
+    participant COM as Communication Module
     participant MCP as MCP Server
+    participant PR as Prompt Registry
+    participant TR as Tool Registry
     participant DB as Data Stores
     
     U->>WA: Send Message
     Note over U,WA: User sends natural language request
     
-    WA->>WH: Forward Message
-    Note over WA,WH: WAHA receives and validates webhook
+    WA->>API: Webhook Event
+    Note over WA,API: WAHA forwards message to API
     
-    WH->>LG: Process Request
-    Note over WH,LG: HMAC verification ensures authenticity
+    API->>SEC: Start Orchestration
+    Note over API,SEC: Initialize state and begin flow
     
-    activate LG
-    LG->>LG: Security Check
-    Note over LG: Validate user, check permissions
+    activate SEC
+    SEC->>MCP: Validate User
+    Note over SEC,MCP: Check user exists and permissions
+    MCP-->>SEC: User & Permissions
+    SEC-->>CTX: Authorized User State
+    deactivate SEC
     
-    LG->>LG: Context Analysis
-    Note over LG: Analyze query complexity, synthesize conversation history
+    activate CTX
+    CTX->>CTX: Update History
+    Note over CTX: Manage conversation context
+    CTX->>MCP: List Prompts
+    MCP->>PR: Get User Prompts
+    Note over MCP,PR: Retrieve available prompts for user
+    PR-->>MCP: Prompts List
+    MCP-->>CTX: Prompts List
+    CTX->>CTX: Discover Capability
+    Note over CTX: Select relevant prompt using LLM
+    CTX-->>RSN: Selected Prompt State
+    deactivate CTX
     
-    LG->>MCP: Tool Discovery
-    Note over LG,MCP: Request available tools based on user role
+    activate RSN
+    RSN->>MCP: Get Prompt Content
+    MCP->>PR: Retrieve Workflow
+    Note over MCP,PR: Get workflow definition
+    PR-->>MCP: Workflow & Tools Config
+    MCP-->>RSN: Workflow & Tools Config
+    RSN->>RSN: Extract Tools
+    Note over RSN: Parse HITL modes from metadata
+    RSN->>RSN: Plan Execution
+    Note over RSN: Use LLM for intelligent planning
+    RSN-->>EXE: Execution Plan State
+    deactivate RSN
     
-    MCP-->>LG: Available Tools
-    Note over MCP,LG: Filtered tool list with metadata
-    
-    LG->>LG: Reasoning & Planning
-    Note over LG: Create execution plan with todo list
-    
-    LG->>MCP: Execute Tools
-    Note over LG,MCP: Sequential or parallel tool execution
-    
-    activate MCP
-    MCP->>DB: CRUD Operations
-    Note over MCP,DB: Interact with PostgreSQL, M365, Redis
-    
+    activate EXE
+    EXE->>EXE: Handle HITL
+    Note over EXE: Check pending confirmations/inputs
+    EXE->>MCP: Execute Tools
+    MCP->>TR: Get Tool Implementation
+    Note over MCP,TR: Retrieve tool functions
+    TR-->>MCP: Tool Functions
+    MCP->>DB: Tool Operations
+    Note over MCP,DB: PostgreSQL, M365, Pinecone
     DB-->>MCP: Results
-    Note over DB,MCP: Return data or confirmation
+    MCP-->>EXE: Tool Results
+    deactivate EXE
     
-    MCP-->>LG: Execution Results
-    Note over MCP,LG: Structured results with metadata
-    deactivate MCP
+    EXE->>EXE: Update State
+    Note over EXE: Track successful/failed tools
+    EXE-->>COM: Results State
     
-    LG->>LG: Format Response
-    Note over LG: Convert results to natural language
-    deactivate LG
-    
-    LG->>MCP: Send Message
-    Note over LG,MCP: Request message delivery
-    
-    MCP->>WA: API Call
-    Note over MCP,WA: Send via WAHA API
-    
+    activate COM
+    COM->>COM: Generate Response
+    Note over COM: Use LLM for natural language
+    COM->>MCP: Send Message Tool
+    MCP->>TR: Get Communication Tool
+    TR-->>MCP: Communication Function
+    MCP->>WA: WAHA API
     WA->>U: Deliver Response
-    Note over WA,U: User receives formatted response
+    deactivate COM
 ```
 
 #### Detailed Flow Analysis
 
-1. **Message Reception and Validation**: When a user sends a message via WhatsApp, it reaches the WAHA (WhatsApp HTTP API) service. WAHA handles the WhatsApp Business API functions including encryption, delivery receipts, and media handling. The webhook handler performs initial validation using HMAC signatures to verify the request source.
+1. **Message Reception**: When a user sends a message via WhatsApp, WAHA (WhatsApp HTTP API) receives it and forwards to the API layer through webhooks. The API layer initializes the orchestration state and begins the LangGraph flow.
 
-2. **Security Layer Processing**: Before business logic execution, the security module validates user identity using phone number as the primary identifier. It verifies user onboarding status and retrieves role-based permissions. Unauthorized users receive an onboarding message.
+2. **Security Module**: The first node validates user identity through the MCP server, checking if the user exists and retrieving their permissions (allowed tools and prompts). This creates a security boundary ensuring only authorized users can proceed.
 
-3. **Context Understanding**: The context module analyzes incoming messages within conversation history. It uses a sliding window approach to maintain relevant context while managing memory efficiently. Query complexity analysis determines whether the request requires simple tool execution or multi-step reasoning.
+3. **Context Module**: Analyzes the message within conversation history, maintaining state through PostgreSQL checkpointing. It discovers available prompts from MCP based on user permissions, then uses an LLM to select the most relevant prompt for the user's intent.
 
-4. **Tool Discovery and Filtering**: Based on user role and query context, the system requests available tools from the MCP server. The server returns a filtered list of tools that the user can access. Dynamic tool discovery allows the system to adapt as new capabilities are added without modifying core logic.
+4. **Reasoning Module**: Retrieves the selected prompt's workflow definition from MCP, which includes the workflow intelligence and tool configurations with HITL modes. It extracts tools from the prompt metadata and uses an LLM to create an intelligent execution plan.
 
-5. **Intelligent Planning**: The reasoning module creates an execution plan, breaking complex requests into discrete steps. For example, \"Schedule a meeting with the sales team and share last month's revenue spreadsheet\" becomes a multi-step plan involving calendar checking, meeting creation, spreadsheet retrieval, and sharing.
+5. **Execution Module**: Handles pending tools requiring human interaction (confirmations or inputs), then executes tools via MCP based on their HITL configuration:
+   - **Auto mode**: Executes immediately without user interaction
+   - **Confirm mode**: Requests user confirmation before execution
+   - **Input mode**: Asks user for missing parameters
+   The module tracks successful and failed tools to support workflow continuation.
 
-6. **Tool Execution**: The MCP server executes tools according to the plan, handling errors and providing feedback. Tools execute in parallel when no dependencies exist, improving response time. Each tool execution is logged for auditing and debugging.
+6. **Communication Module**: Generates natural language responses using an LLM based on the execution results and conversation context. It sends the response through MCP's communication tool, which delivers it via WAHA to the user.
 
-7. **Response Generation**: The communication module transforms structured tool outputs into conversational responses. It considers user communication style, previous interactions, and result complexity to generate appropriate responses. Long responses are automatically chunked to comply with WhatsApp message limits.
+7. **State Persistence**: Throughout the flow, LangGraph maintains conversation state using PostgreSQL checkpointing, enabling workflows to pause for user input and resume seamlessly across multiple messages.
 
-8. **Delivery and Confirmation**: The formatted response is sent through the MCP server to WAHA, which handles delivery to WhatsApp. Delivery receipts are tracked to ensure messages reach users, with retry logic for temporary failures.
+8. **Workflow Continuation**: The system supports complex multi-step workflows that can span multiple user interactions, with intelligent handling of partial completions and error recovery.
 
 ## Component Specifications
 
@@ -278,57 +337,86 @@ This section provides detailed technical specifications for each major component
 
 ### MCP Server (Golang)
 
-The MCP (Model Context Protocol) Server is the core tool execution layer. Written in Go for concurrency support and low-latency performance, the MCP Server provides a unified interface for external integrations. This abstraction layer isolates AI orchestration logic from API complexities, authentication mechanisms, and data formats.
+The MCP (Model Context Protocol) Server manages two primary components: prompts (intelligent workflows) and tools (executable functions). Written in Go for concurrency and performance, the MCP Server provides a unified interface for workflow definitions and business logic execution. This architecture separates conversation intelligence (prompts) from functional implementation (tools), enabling flexible workflow composition and tool reuse.
 
 #### Architecture
 
-The MCP Server follows a modular architecture with clear separation between API layer, business logic, and external integrations. This design enables independent component testing and allows new tool addition without affecting existing functionality.
+The MCP Server follows a dual-registry architecture where prompts and tools are managed independently. Prompts define workflow intelligence and specify which tools they can use with HITL configurations. Tools implement business logic and can be composed into different workflows through prompt definitions. This separation enables workflow reusability and tool modularity.
 
 ```mermaid
 graph LR
     subgraph "MCP Server"
-        API[API Gateway]
-        TM[Tool Manager]
-        TReg[Tool Registry]
+        API[MCP API Layer]
+        
+        subgraph "Dual Registry System"
+            PR[Prompt Registry]
+            TR[Tool Registry]
+        end
+        
+        subgraph "Prompt Definitions"
+            UP[User Prompts]
+            TP[Ticket Prompts]
+            SP[Schedule Prompts]
+            KP[Knowledge Prompts]
+        end
         
         subgraph "Tool Implementations"
             UT[User Tools]
-            CT[Calendar Tools]
-            ST[Sheet Tools]
+            TT[Ticket Tools]
+            ST[Schedule Tools]
             KT[Knowledge Tools]
-            CMT[Comm Tools]
+            CT[Communication Tools]
         end
         
-        subgraph "Adapters"
-            PGA[PostgreSQL Adapter]
-            RDA[Redis Adapter]
-            EXLA[Excel API Adapter]
-            CALA[Calendar API Adapter]
-            ODA[OneDrive API Adapter]
-            WAHAA[WAHA Adapter]
+        subgraph "External Adapters"
+            PGA[PostgreSQL]
+            EXLA[Excel API]
+            CALA[Calendar API]
+            ODA[OneDrive API]
+            WAHAA[WAHA API]
+            PINE[Pinecone]
         end
     end
     
-    API --> TM
-    TM --> TReg
-    TReg --> UT
-    TReg --> CT
-    TReg --> ST
-    TReg --> KT
-    TReg --> CMT
+    API --> PR
+    API --> TR
+    
+    PR --> UP
+    PR --> TP
+    PR --> SP
+    PR --> KP
+    
+    TR --> UT
+    TR --> TT
+    TR --> ST
+    TR --> KT
+    TR --> CT
+    
+    UP -.-> UT
+    TP -.-> TT
+    TP -.-> CT
+    SP -.-> ST
+    KP -.-> KT
     
     UT --> PGA
-    CT --> CALA
-    ST --> EXLA
+    TT --> EXLA
+    ST --> CALA
     KT --> PGA
-    KT --> RDA
     KT --> ODA
-    CMT --> WAHAA
+    KT --> PINE
+    CT --> WAHAA
 ```
 
-#### Tool Specifications
+#### Prompt and Tool Specifications
 
-Each tool in the MCP Server is a self-contained module with defined inputs, outputs, and side effects. Tools are categorized as "static" (core functionality that rarely changes) or "dynamic" (functionality requiring frequent updates or having external dependencies).
+The MCP Server implements a two-layer architecture:
+
+**Prompts** define intelligent workflows with step-by-step flow definitions, interaction patterns, and tool configurations. Each prompt specifies which tools it can use and their HITL (Human-in-the-Loop) modes:
+- **Auto**: Tool executes automatically without user interaction
+- **Confirm**: Tool requests user confirmation before execution  
+- **Input**: Tool requires additional user input for missing parameters
+
+**Tools** are type-safe, self-contained modules that implement business logic. Each tool defines structured inputs/outputs with JSON schema validation and standardized error handling.
 
 ##### User Management Tools
 
@@ -435,67 +523,106 @@ graph TB
 
 ### LangGraph Engine (Python)
 
-The LangGraph Engine serves as the cognitive center of the virtual assistant, orchestrating conversation flows while maintaining state across interactions. Built on LangChain's LangGraph framework, it implements a directed graph architecture where nodes represent processing steps and edges define conversation state flow.
+The LangGraph Engine serves as the conversation orchestrator, implementing a five-module pipeline that processes user messages through specialized nodes. Built on LangChain's LangGraph framework, it uses a directed state graph where each module performs specific cognitive functions while maintaining conversation state.
 
-The implementation uses LangGraph's capabilities to handle multi-step reasoning, conditional branching, and long-running conversations across multiple user interactions. Unlike traditional chatbots that treat each message independently, this system maintains conversational context, enabling multi-turn interactions.
+The orchestrator v1 implements sequential processing through Security → Context → Reasoning → Execution → Communication modules, with each node making intelligent routing decisions based on the conversation state. The engine integrates with MCP servers to discover prompts (workflows) and execute tools with HITL support.
 
-Python for the LangGraph Engine provides access to the AI/ML ecosystem while maintaining code readability and development capabilities. The engine is horizontally scalable, with each conversation maintaining its own state graph that persists and resumes across server restarts.
+Python provides optimal integration with the AI/ML ecosystem, while LangGraph's state management enables conversation persistence through PostgreSQL checkpointing. This allows complex workflows to pause for user input and resume seamlessly across multiple interactions.
 
 #### Architecture
 
-The LangGraph Engine uses a modular architecture where each module represents a node in the conversation graph. This design enables separation of concerns, independent testing, and conversation flow modification without affecting core logic.
+The LangGraph Engine implements a sequential node architecture where each module specializes in a specific aspect of conversation processing. The state flows linearly through the modules, with each node making routing decisions based on processing results and conversation context.
 
 ```mermaid
 graph TB
-    subgraph "LangGraph Core"
-        ST[State Manager]
-        GR[Graph Runtime]
-        TC[Tool Client]
+    subgraph "LangGraph Orchestrator V1"
+        API[API Layer]
+        
+        subgraph "State Management"
+            ST[State Graph]
+            CP[PostgreSQL Checkpointer]
+        end
+        
+        subgraph "Processing Pipeline"
+            SEC[Security Module]
+            CTX[Context Module]
+            RSN[Reasoning Module]
+            EXE[Execution Module]
+            COM[Communication Module]
+        end
+        
+        subgraph "External Integration"
+            MCP[FastMCP Client]
+        end
     end
     
-    subgraph "Processing Modules"
-        SEC[Security Module]
-        CTX[Context Module]
-        RSN[Reasoning Module]
-        COM[Communication Module]
-    end
-    
-    subgraph "Support Services"
-        CACHE[Cache Manager]
-    end
-    
-    ST <--> GR
-    GR <--> TC
-    GR --> SEC
+    API --> ST
+    ST --> SEC
     SEC --> CTX
+    SEC --> COM
     CTX --> RSN
+    CTX --> COM
+    RSN --> EXE
     RSN --> COM
+    EXE --> COM
     
-    SEC <--> CACHE
-    CTX <--> CACHE
+    ST <--> CP
+    SEC <--> MCP
+    CTX <--> MCP
+    RSN <--> MCP
+    EXE <--> MCP
+    COM <--> MCP
 ```
 
 #### Module Specifications
 
 ##### Security Module
-The Security Module serves as the first line of defense for every user interaction. It validates user identity through phone number verification and checks role-based permissions. The module implements HMAC signature verification to ensure webhook authenticity and maintains comprehensive audit logs for all security events.
+The Security Module validates user identity and permissions through MCP integration. It checks if users exist in the system and retrieves their role-based permissions for both tools and prompts. The module creates a security boundary ensuring only authorized users can proceed to context analysis.
 
-Key responsibilities include user validation, permission filtering based on roles, and webhook authentication. The module integrates with the user management system to retrieve current permissions.
+Key responsibilities include user validation via MCP server, permission retrieval (allowed tools and prompts), and routing decisions based on authorization status. Unauthorized users are routed directly to the communication module for onboarding guidance.
 
 ##### Context Module
-The Context Module manages the conversational state and memory that makes our assistant feel intelligent and aware. It analyzes incoming queries to determine complexity levels, synthesizes conversation history into meaningful context summaries, and extracts relevant entities like dates, names, and locations.
+The Context Module manages conversation history and discovers the most relevant workflow for user requests. It updates conversation state, maintains context through PostgreSQL checkpointing, and uses an LLM-based capability discovery strategy to select appropriate prompts from MCP.
 
-This module implements a sliding window approach to conversation history, ensuring relevant context is maintained while managing memory efficiently. It handles query complexity analysis to route simple requests through fast paths while ensuring complex multi-step requests receive appropriate processing resources.
+The module retrieves available prompts based on user permissions, analyzes the user message against prompt descriptions, and selects the most relevant workflow. It handles query relevance analysis to route messages to reasoning for workflow execution or directly to communication for general responses.
 
 ##### Reasoning Module
-The Reasoning Module represents the cognitive center of our assistant, transforming user intents into executable plans. It creates detailed execution plans that break complex requests into manageable steps, handles tool selection based on available capabilities, and manages parallel execution when possible.
+The Reasoning Module retrieves workflow definitions from MCP and uses LLM-based analysis to create intelligent execution plans. It extracts tools from prompt metadata, parses HITL configurations, and builds comprehensive execution strategies that consider tool dependencies and user interaction requirements.
 
-The module excels at handling ambiguous queries by generating clarification requests and can optimize execution plans for better performance. It maintains a sophisticated understanding of tool dependencies and can adapt plans based on intermediate results or errors.
+The module uses a workflow analyzer to parse prompt content and extract tool configurations using pattern matching. It creates execution plans that track tool states (successful, failed, pending) and can adapt based on user inputs and tool execution results.
+
+##### Execution Module
+The Execution Module handles Human-in-the-Loop (HITL) interactions and executes tools via MCP based on their configured modes. It manages pending tools requiring user confirmations or inputs, extracts parameters using LLM analysis, and tracks workflow continuation across multiple user interactions.
+
+The module supports three HITL modes: auto (immediate execution), confirm (user approval required), and input (additional parameters needed). It maintains execution state to support workflow resumption and handles error recovery for failed tool executions.
+
+###### HITL Confirmation Flow for Auto Input
+
+```mermaid
+flowchart TD
+    A[Tool Execution Request] --> B{HITL Mode?}
+    B -->|Auto| C[Execute Immediately]
+    B -->|Confirm| D[Request User Confirmation]
+    B -->|Input| E[Request Missing Parameters]
+    
+    D --> F{User Response?}
+    F -->|Approved| C
+    F -->|Rejected| G[Cancel Execution]
+    
+    E --> H{Parameters Provided?}
+    H -->|Yes| C
+    H -->|No| I[Re-request Parameters]
+    I --> H
+    
+    C --> J[Tool Execution Complete]
+    G --> K[Workflow Continues]
+    J --> K
+```
 
 ##### Communication Module
-The Communication Module transforms structured data and results into natural, conversational responses. It formats responses based on user preferences, chunks long messages to comply with WhatsApp limits, and adds contextual quick reply suggestions to enhance user experience.
+The Communication Module generates natural language responses using LLM-based response generation. It transforms structured tool results and conversation context into conversational responses, then sends messages through MCP's communication tools to deliver responses via WAHA to users.
 
-The module handles proactive notifications, manages response personalization, and ensures consistent communication style across all interactions. It can adapt its communication style based on user behavior patterns and interaction history.
+The module handles response formatting, maintains conversational tone consistency, and ensures responses are appropriately contextual based on the conversation history and execution results.
 
 #### State Management
 
@@ -531,7 +658,7 @@ The authentication system uses WhatsApp's phone number verification as the prima
 graph LR
     subgraph "Authentication Flow"
         WA[WhatsApp Number]
-        HMAC[HMAC Verification]
+        AUTH[User Authentication]
         UID[User Identification]
         PERM[Permission Loading]
     end
@@ -542,8 +669,8 @@ graph LR
         USR[User Permissions]
     end
     
-    WA --> HMAC
-    HMAC --> UID
+    WA --> AUTH
+    AUTH --> UID
     UID --> PERM
     PERM --> ADM
     PERM --> STF
@@ -554,13 +681,14 @@ graph LR
 
 The security implementation follows industry best practices while adapting to conversational AI system requirements. Each security measure balances protection against usability to ensure legitimate use is not hindered.
 
-#### 1. HMAC Authentication
+#### 1. Authentication Security
 
-HMAC (Hash-based Message Authentication Code) provides cryptographic assurance that webhook requests originate from trusted sources. This prevents unauthorized systems from injecting commands or accessing user data.
+The authentication system uses WhatsApp's inherent phone number verification as the primary authentication mechanism. This approach leverages WhatsApp's own security infrastructure while providing seamless user experience without additional credentials.
 
 Implementation Details:
-- **Unique Secret Keys**: Each webhook endpoint maintains its own 256-bit secret key, stored in a secure key management system
-- **Request Signing**: Every incoming request includes an HMAC-SHA256 signature computed over the request body and timestamp
+- **Phone Number Identity**: Users are authenticated based on their verified WhatsApp phone numbers
+- **MCP Integration**: Authentication validation occurs through the MCP server's user management tools
+- **Session Management**: Conversation state is maintained through PostgreSQL checkpointing with secure session handling
 
 
 #### 2. Dynamic Access Control
@@ -632,7 +760,7 @@ Pipeline Stages:
 - **Docling**: Document processing library for chunking and text extraction
 - **Pinecone**: Managed vector database for semantic search and embeddings
 - **Redis Pub/Sub**: Messaging system for real-time communication and job processing
-- **HMAC**: Hash-based authentication ensuring message integrity and authenticity
+- **Authentication**: Phone number-based authentication through WhatsApp verification
 - **RBAC**: Role-Based Access Control - Permission system based on organizational roles
 - **Webhook**: HTTP callback mechanism for real-time event notifications
 
